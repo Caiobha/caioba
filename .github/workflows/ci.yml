@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Validate shell scripts (if any)
+        run: |
+          set -euo pipefail
+          mapfile -t scripts < <(find . -type f \( -name '*.sh' -o -name '*.bash' \) -not -path './.git/*')
+          if [ "${#scripts[@]}" -eq 0 ]; then
+            echo "No shell scripts found."
+            exit 0
+          fi
+          printf '%s\n' "${scripts[@]}" | xargs -r -n1 bash -n
+
+      - name: Validate workflow files
+        run: |
+          set -euo pipefail
+          test -f .github/workflows/copilot-setup-steps.yml
+          test -f .github/workflows/ci.yml
